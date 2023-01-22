@@ -163,6 +163,7 @@ class Enemy(pygame.sprite.Sprite):
 
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
+
 player_group = pygame.sprite.Group()
 enemy_group = pygame.sprite.Group()
 
@@ -171,10 +172,6 @@ def generate_start_level(level):
     start_room_pos_x, start_room_pos_y = None, None
     for y in range(len(level)):
         for x in range(len(level[y])):
-            # if level[y][x] == '*':
-            #     Tile('empty', x, y)
-            # elif level[y][x] == '#':
-            #     Tile('wall', x, y)
             if level[y][x] == 'S':
                 new_player, room_map = generate_room('S')
                 start_room_pos_x = x
@@ -184,6 +181,10 @@ def generate_start_level(level):
 
 
 def generate_room(type):
+    tiles_group.empty()
+    enemy_group.empty()
+    print(enemy_group)
+
     new_player = None
     if type == 'S':
         room = load_room('start_room.txt')
