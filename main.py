@@ -99,6 +99,8 @@ enemy_images = {
 
 fight_screen = load_image('fight_screen.png')
 
+error_screen = load_image('error_screen.png')
+
 tile_width = tile_height = 50
 
 class Tile(pygame.sprite.Sprite):
@@ -124,41 +126,37 @@ class Player(pygame.sprite.Sprite):
         self.is_moving_right = False
 
         self.is_fighting = False
+        self.is_dead_inside = False
 
-
-    def move_up(self):
-        if room_map[self.pos_y - 1][self.pos_x] != '#' or level_map[room_pos_y - 1][room_pos_x] != '*':
-            self.pos_y -= 1
-            self.rect = self.rect.move(0, -50)
-
-    def move_down(self):
-        if room_map[self.pos_y + 1][self.pos_x] != '#' or level_map[room_pos_y + 1][room_pos_x] != '*':
-            self.pos_y += 1
-            self.rect = self.rect.move(0, 50)
-
-    def move_left(self):
-        if room_map[self.pos_y][self.pos_x - 1] != '#' or level_map[room_pos_y][room_pos_x - 1] != '*':
-            self.pos_x -= 1
-            self.rect = self.rect.move(-50, 0)
-
-    def move_right(self):
-        if room_map[self.pos_y][self.pos_x + 1] != '#' or level_map[room_pos_y - 1][room_pos_x + 1] != '*':
-            self.pos_x += 1
-            self.rect = self.rect.move(50, 0)
+    def move(self):
+        try:
+            if self.is_moving_up and room_map[int(self.pos_y)][int(self.pos_x)] != '#':
+                self.rect = self.rect.move(0, -5)
+            if self.is_moving_down and room_map[int(self.pos_y + 1)][int(self.pos_x)] != '#':
+                self.rect = self.rect.move(0, 5)
+            if self.is_moving_right and room_map[int(self.pos_y)][int(self.pos_x + 1)] != '#':
+                self.rect = self.rect.move(5, 0)
+            if self.is_moving_left and room_map[int(self.pos_y)][int(self.pos_x)] != '#':
+                self.rect = self.rect.move(-5, 0)
+        except IndexError:
+            self.is_dead_inside = True
 
     def update(self):
         self.pos_x = self.rect[0] / 50
         self.pos_y = self.rect[1] / 50
-        if pygame.sprite.spritecollideany(self, enemy_group):
-            self.is_fighting = True
+        for enemy in pygame.sprite.spritecollide(self, enemy_group, False):
+            print(enemy)
+        # if pygame.sprite.spritecollideany(self, enemy_group):
+        #     self.is_fighting = True
 
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self, room_x, room_y):
         super().__init__(enemy_group, all_sprites)
-        self.pos_x = randint(1, 8)
-        self.pos_y = randint(1, 8)
-        # self.type = choice(enemy_images)
+        self.pos_x = randint(2, 7)
+        self.pos_y = randint(2, 7)
+        self.room_pos_x = room_x
+        self.room_pos_y = room_y
         self.image = choice(list(enemy_images.values()))
         self.rect = self.image.get_rect().move(
             tile_width * self.pos_x + 15, tile_height * self.pos_y + 5)
@@ -191,12 +189,19 @@ def generate_room(type):
         room = load_room('start_room.txt')
     elif type == 'B':
         room = load_room('bonus_room.txt')
+        Enemy(room_pos_x, room_pos_y)
+        Enemy(room_pos_x, room_pos_y)
     elif type == '#':
         room = load_room('bonus_room.txt')
+        Enemy(room_pos_x, room_pos_y)
+        Enemy(room_pos_x, room_pos_y)
     elif type == '*':
         room = load_room('empty.txt')
     else:
         room = load_room('bonus_room.txt')
+        Enemy(room_pos_x, room_pos_y)
+        Enemy(room_pos_x, room_pos_y)
+
     print(room)
 
     for y in range(len(room)):
@@ -207,18 +212,21 @@ def generate_room(type):
                 Tile('wall', x, y)
             elif room[y][x] == '@':
                 Tile('floor', x, y)
-                new_player = Player(x, y)
+                if player_group:
+                    new_player = None
+                else:
+                    new_player = Player(x, y)
             elif room[y][x] == 'D':
                 Tile('floor', x, y)
-    Enemy()
-    Enemy()
 
     return new_player, room
 
 def switch_room(x, y):
     room_map = None
-    print(level_map[room_pos_x][room_pos_y])
-    room_map = generate_room(level_map[room_pos_y][room_pos_x])
+    try:
+        room_map = generate_room(level_map[room_pos_y][room_pos_x])
+    except IndexError:
+        player.is_dead_inside = True
     return room_map
 
 level_map = load_level('test_map.txt')
@@ -257,45 +265,43 @@ while running:
             if event.key == 100:
                 player.is_moving_right = False
 
-    if player.pos_x == 9:
+    if player.pos_x == 8.5:
         room_pos_x += 1
         player.pos_x = 1
         player.rect = player.rect.move(-400, 0)
         switch_room(room_pos_x, room_pos_y)
-    elif player.pos_x == 0:
+    elif player.pos_x == 0.5:
         room_pos_x -= 1
         player.pos_x = 8
         player.rect = player.rect.move(400, 0)
         switch_room(room_pos_x, room_pos_y)
-    elif player.pos_y == 9:
+    elif player.pos_y == 8.5:
         room_pos_y += 1
         player.pos_y = 1
         player.rect = player.rect.move(0, -400)
         switch_room(room_pos_x, room_pos_y)
-    elif player.pos_y == 0:
+    elif player.pos_y == 0.5:
         room_pos_y -= 1
         player.pos_y = 8
         player.rect = player.rect.move(0, 400)
         switch_room(room_pos_x, room_pos_y)
 
-    if player.is_moving_up:
-        player.rect = player.rect.move(0, -5)
-    if player.is_moving_down:
-        player.rect = player.rect.move(0, 5)
-    if player.is_moving_right:
-        player.rect = player.rect.move(5, 0)
-    if player.is_moving_left:
-        player.rect = player.rect.move(-5, 0)
-
-
-
+    player.move()
     player.update()
 
     all_sprites.update()
     all_sprites.draw(screen)
     player_group.draw(screen)
+    # for sprite in enemy_group:
+    #     if sprite.room_pos_x == room_pos_x and sprite.room_pos_y == room_pos_y:
+    #         sprite.draw(screen)
+    enemy_group.draw(screen)
+
     if player.is_fighting:
         fon = pygame.transform.scale(load_image('fight_screen.png'), (width, height))
+        screen.blit(fon, (0, 0))
+    elif player.is_dead_inside:
+        fon = pygame.transform.scale(load_image('error_screen.png'), (width, height))
         screen.blit(fon, (0, 0))
     pygame.display.flip()
 pygame.quit()
