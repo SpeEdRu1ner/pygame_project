@@ -144,10 +144,17 @@ class Player(pygame.sprite.Sprite):
     def update(self):
         self.pos_x = self.rect[0] / 50
         self.pos_y = self.rect[1] / 50
-        for enemy in pygame.sprite.spritecollide(self, enemy_group, False):
-            print(enemy)
-        # if pygame.sprite.spritecollideany(self, enemy_group):
-        #     self.is_fighting = True
+
+        if pygame.sprite.spritecollideany(self, enemy_group):
+            self.is_fighting = True
+
+    def return_to_prev_pos(self):
+        print('aa')
+        self.pos_x = 5
+        self.pos_y = 5
+        self.rect = self.image.get_rect().move(
+            tile_width * self.pos_x + 15, tile_height * self.pos_y + 5)
+        self.is_dead_inside = False
 
 
 class Enemy(pygame.sprite.Sprite):
@@ -218,6 +225,9 @@ def generate_room(type):
                 else:
                     new_player = Player(x, y)
             elif room[y][x] == 'D':
+                print(room[y])
+                # if y == 0 and level_map[room_pos_y][room_pos_x] == '*':
+                #     Tile('wall', x, y)
                 Tile('floor', x, y)
 
     return new_player, room
@@ -266,6 +276,11 @@ while running:
             if event.key == 100:
                 player.is_moving_right = False
 
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1 and player.is_dead_inside:
+                player.return_to_prev_pos()
+
+
     if player.pos_x == 8.5:
         room_pos_x += 1
         player.pos_x = 1
@@ -293,9 +308,7 @@ while running:
     all_sprites.update()
     all_sprites.draw(screen)
     player_group.draw(screen)
-    # for sprite in enemy_group:
-    #     if sprite.room_pos_x == room_pos_x and sprite.room_pos_y == room_pos_y:
-    #         sprite.draw(screen)
+
     enemy_group.draw(screen)
 
     if player.is_fighting:
